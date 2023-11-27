@@ -97,3 +97,10 @@ target/
 # vscode
 .vscode/
 
+DCNv2/
+
+FairMOT-master/FairMOT-master/models/
+
+**/.pyc
+
+**/exp/

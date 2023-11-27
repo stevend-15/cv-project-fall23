@@ -1,5 +1,5 @@
 {
-    "root":"/home/zyf/dataset",
+    "root":"/home/grads/stedevert33/cv/project/cv-project-fall23/FairMOT-master/FairMOT-master/src/lib/datasets/",
     "train":
     {
         "mot20":"./data/mot20.train"
