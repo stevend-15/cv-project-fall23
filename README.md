@@ -40,12 +40,3 @@ label_root = '/home/grads/stedevert33/cv/project/cv-project-fall23/FairMOT-maste
 ```
 17. `chmod +x experiments/mot20_ft_mix_dla34.sh`
 18. Run `experiments/mot20_ft_mix_dla34.sh`
-Footer
-© 2023 GitHub, Inc.
-Footer navigation
-Terms
-Privacy
-Security
-Status
-Docs
-Contact

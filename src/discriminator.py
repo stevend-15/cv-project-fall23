@@ -8,6 +8,7 @@ import math
 path_to_utils = "../FairMOT/FairMOT/src/lib/models/utils.py"
 sys.path.append(path_to_utils)
 
+#from utils import _transpose_and_gather_feat
 #from .FairMOT.FairMOT.src.lib.models.utils import _tranpose_and_gather_feat
 
 __all__ = [
