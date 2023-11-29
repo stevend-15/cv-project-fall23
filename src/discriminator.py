@@ -1,9 +1,14 @@
+import sys
+
 from torch import nn
 import torch
 from torch.nn import functional as F
 import math
 
-from FairMOT.FairMOT.src.lib.models.utils import _tranpose_and_gather_feat
+path_to_utils = "../FairMOT/FairMOT/src/lib/models/utils.py"
+sys.path.append(path_to_utils)
+
+#from .FairMOT.FairMOT.src.lib.models.utils import _tranpose_and_gather_feat
 
 __all__ = [
     'Discriminator',

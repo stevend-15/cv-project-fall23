@@ -97,3 +97,16 @@ target/
 # vscode
 .vscode/
 
+
+# models folder 
+
+*.pth
+
+FairMOT/FairMOT/exp/
+
+DCNv2/
+
+**.pyc
+
+
+**/__pycache__

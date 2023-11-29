@@ -2,6 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys
+
 import math
 import torch
 import numpy as np
@@ -17,7 +19,12 @@ from models.decode import mot_decode
 from models.utils import _sigmoid, _tranpose_and_gather_feat
 from utils.post_process import ctdet_post_process
 from .base_trainer import BaseTrainer
-from src.discriminator import Discriminator
+#from src.discriminator import Discriminator
+
+path_to_discrim = "../../../../../"
+sys.path.append(path_to_discrim)
+
+from discriminator import Discriminator
 
 
 class MotLoss(torch.nn.Module):
