@@ -17,7 +17,8 @@ from models.decode import mot_decode
 from models.utils import _sigmoid, _tranpose_and_gather_feat
 from utils.post_process import ctdet_post_process
 from .base_trainer import BaseTrainer
-from src.discriminator import Discriminator
+from src.discriminator import Discriminator, Discriminator0
+from src.gan import losses
 
 
 class MotLoss(torch.nn.Module):
@@ -42,12 +43,17 @@ class MotLoss(torch.nn.Module):
         self.emb_scale = math.sqrt(2) * math.log(self.nID - 1)
         self.s_det = nn.Parameter(-1.85 * torch.ones(1))
         self.s_id = nn.Parameter(-1.05 * torch.ones(1))
-        self.D = Discriminator(self.emb_scale, self.emb_dim, self.nID, 64, opt.gt_dim, opt.total_dim).to(opt.device)
-        self.D_loss = opt.D_loss() if opt.D_loss else nn.BCEWithLogitsLoss()
-        self.D_opt = opt.D_opt(self.D.parameters()) if opt.D_opt else torch.optim.Adam(self.D.parameters(), betas=(0.5, 0.999))
-        self.G_loss = opt.G_loss() if opt.G_loss else nn.BCEWithLogitsLoss()
-        self.gan = True
-
+        self.gan = opt.gan
+        if self.gan:
+            if True:
+                self.D = Discriminator0(self.emb_scale, self.emb_dim, self.nID, 64).to(opt.device)
+            else:
+                self.D = Discriminator(self.emb_scale, self.emb_dim, self.nID, 64).to(opt.device)
+            loss = losses[opt.enable_gan]
+            self.D_loss = loss()
+            self.D_opt = torch.optim.Adam(self.D.parameters(), betas=(0.5, 0.999))
+            self.G_loss = loss()
+        
     def forward(self, outputs, batch):
         if self.gan:
             return self.forward_1(outputs, batch)
@@ -57,9 +63,10 @@ class MotLoss(torch.nn.Module):
     def forward_1(self, outputs, batch):
         opt = self.opt
         loss, hm_loss, wh_loss, off_loss, id_loss = 0, 0, 0, 0, 0
+        torch.cuda.empty_cache()
 
         self.D_opt.zero_grad()
-        d_input = outputs.clone().detach()
+        d_input = [ {key: value.detach() for key, value in output.items()} for output in outputs]
         d_fake_loss, d_real_loss = 0, 0
         groundtruth = False
         for s in range(opt.num_stacks):
@@ -76,6 +83,8 @@ class MotLoss(torch.nn.Module):
                             batch['wh'],
                             batch['hm'], groundtruth)
             d_fake_loss += self.D_loss(d_out, torch.ones_like(d_out))
+        del d_input
+        torch.cuda.empty_cache()
         # the fake data should close to zero, because d_out is the error of the predict and ground truth
         groundtruth = True
         input = batch
@@ -89,10 +98,12 @@ class MotLoss(torch.nn.Module):
                         batch['ind'],
                         batch['wh'],
                         batch['hm'], groundtruth)
+        torch.cuda.empty_cache()
         d_real_loss += self.D_loss(d_out, torch.ones_like(d_out))
-        d_total = 0.5 * d_out + 0.5 * d_real_loss / opt.num_stacks
+        d_total = 0.5 * d_real_loss + 0.5 * d_fake_loss / opt.num_stacks
         d_total.backward()
         self.D_opt.step()
+        torch.cuda.empty_cache()
 
         g_fake_loss = 0
         groundtruth = False
@@ -113,7 +124,7 @@ class MotLoss(torch.nn.Module):
 
         loss_stats = {'loss': g_fake_loss / opt.num_stacks, 'hm_loss': hm_loss,
                       'wh_loss': wh_loss, 'off_loss': off_loss, 'id_loss': id_loss}
-        return loss, loss_stats
+        return g_fake_loss, loss_stats
 
     def forward_0(self, outputs, batch):
         opt = self.opt
@@ -167,7 +178,7 @@ class MotTrainer(BaseTrainer):
         super(MotTrainer, self).__init__(opt, model, optimizer=optimizer)
 
     def _get_losses(self, opt):
-        loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss', 'id_loss']
+        loss_states = ['loss']#, 'hm_loss', 'wh_loss', 'off_loss', 'id_loss']
         loss = MotLoss(opt)
         return loss_states, loss
 
